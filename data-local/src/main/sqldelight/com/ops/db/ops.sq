@@ -1,0 +1,131 @@
+-- TASKS
+CREATE TABLE task (
+  id TEXT NOT NULL PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  status TEXT NOT NULL,           -- "OPEN" | "DONE" | "CANCELED"
+  dueAt INTEGER,                  -- epoch millis
+  projectId TEXT,                 -- nullable
+  priority INTEGER NOT NULL,       -- 0/1/2
+  updatedAt INTEGER NOT NULL,      -- epoch millis
+  deletedAt INTEGER               -- epoch millis (tombstone)
+);
+
+createIndexTaskUpdatedAt:
+CREATE INDEX IF NOT EXISTS idx_task_updatedAt ON task(updatedAt);
+
+createIndexTaskDeletedAt:
+CREATE INDEX IF NOT EXISTS idx_task_deletedAt ON task(deletedAt);
+
+-- Insert / Update (Upsert)
+upsertTask:
+INSERT OR REPLACE INTO task(
+  id, title, description, status, dueAt, projectId, priority, updatedAt, deletedAt
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Soft delete
+softDeleteTask:
+UPDATE task
+SET deletedAt = ?, updatedAt = ?
+WHERE id = ?;
+
+-- Hard delete (optional)
+hardDeleteTask:
+DELETE FROM task WHERE id = ?;
+
+-- Queries
+selectTaskById:
+SELECT * FROM task WHERE id = ?;
+
+selectActiveTasks:
+SELECT * FROM task
+WHERE deletedAt IS NULL
+ORDER BY
+  -- High prio first, then newest update
+  priority DESC,
+  updatedAt DESC;
+
+selectAllTasksIncludingDeleted:
+SELECT * FROM task
+ORDER BY updatedAt DESC;
+
+countActiveTasks:
+SELECT count(*) FROM task WHERE deletedAt IS NULL;
+
+-- ----------------------------
+-- OFFLINE SYNC (v1)
+-- ----------------------------
+
+CREATE TABLE IF NOT EXISTS outbox (
+  outboxId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  entity TEXT NOT NULL,          -- "task"
+  entityId TEXT NOT NULL,        -- task.id
+  op TEXT NOT NULL,              -- "UPSERT" | "DELETE"
+  updatedAt INTEGER NOT NULL,    -- epoch millis
+  payload TEXT,                  -- json for UPSERT, null for DELETE
+  enqueuedAt INTEGER NOT NULL    -- epoch millis
+);
+
+CREATE INDEX IF NOT EXISTS idx_outbox_entity_time ON outbox(entity, enqueuedAt);
+
+CREATE TABLE IF NOT EXISTS sync_state (
+  entity TEXT NOT NULL PRIMARY KEY, -- "task"
+  cursor INTEGER NOT NULL
+);
+
+getCursor:
+SELECT cursor FROM sync_state WHERE entity = ?;
+
+setCursor:
+INSERT OR REPLACE INTO sync_state(entity, cursor) VALUES(?, ?);
+
+enqueueOutbox:
+INSERT INTO outbox(entity, entityId, op, updatedAt, payload, enqueuedAt)
+VALUES (?, ?, ?, ?, ?, ?);
+
+selectOutboxBatch:
+SELECT * FROM outbox ORDER BY outboxId LIMIT ?;
+
+deleteOutboxById:
+DELETE FROM outbox WHERE outboxId = ?;
+
+clearOutbox:
+DELETE FROM outbox;
+
+-- -------------------
+-- PROJECTS
+-- -------------------
+CREATE TABLE IF NOT EXISTS project (
+  id TEXT NOT NULL PRIMARY KEY,
+  name TEXT NOT NULL,
+  color INTEGER,                  -- optional (ARGB int)
+  updatedAt INTEGER NOT NULL,
+  deletedAt INTEGER
+);
+
+createIndexProjectUpdatedAt:
+CREATE INDEX IF NOT EXISTS idx_project_updatedAt ON project(updatedAt);
+
+selectProjectById:
+SELECT * FROM project WHERE id = ?;
+
+selectActiveProjects:
+SELECT * FROM project
+WHERE deletedAt IS NULL
+ORDER BY name COLLATE NOCASE;
+
+upsertProject:
+INSERT OR REPLACE INTO project(id, name, color, updatedAt, deletedAt)
+VALUES (?, ?, ?, ?, ?);
+
+softDeleteProject:
+UPDATE project
+SET deletedAt = ?, updatedAt = ?
+WHERE id = ?;
+
+archiveProject:
+UPDATE project
+SET deletedAt = ?, updatedAt = ?
+WHERE id = ?;
+
+
