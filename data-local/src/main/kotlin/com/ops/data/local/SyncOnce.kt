@@ -30,8 +30,6 @@ class SyncOnce(
         val outbox = q.selectOutboxBatch(50).executeAsList()
 
         if (outbox.isNotEmpty()) {
-            pushedCount = outbox.size
-
             val changes = outbox.map {
                 SyncChange(
                     entity = it.entity,
@@ -45,6 +43,8 @@ class SyncOnce(
             // Push zum Server
             api.push(SyncPushRequest(changes))
 
+            pushedCount = outbox.size
+
             // Outbox nach erfolgreichem Push löschen
             db.transaction {
                 outbox.forEach { row ->
@@ -54,48 +54,74 @@ class SyncOnce(
         }
 
         /* =========================
-           2) PULL (Server → Client)
-           ========================= */
-        val cursor = q.getCursor("task").executeAsOneOrNull() ?: 0L
-        val pull = api.pull(entity = "task", cursor = cursor)
+   2) PULL (Server → Client)
+   ========================= */
+        val entities = listOf("project", "task")
 
-        if (pull.changes.isNotEmpty()) {
-            pulledCount = pull.changes.size
+        entities.forEach { entity ->
+            val cursor = q.getCursor(entity).executeAsOneOrNull() ?: 0L
+            val pull = api.pull(entity = entity, cursor = cursor)
 
-            db.transaction {
-                pull.changes.forEach { ch ->
-                    if (ch.entity != "task") return@forEach
+            if (pull.changes.isNotEmpty()) {
+                pulledCount += pull.changes.size
 
-                    when (ch.op) {
-                        "UPSERT" -> {
-                            val payload = ch.payload ?: return@forEach
-                            val o = JSONObject(payload)
+                db.transaction {
+                    pull.changes.forEach { ch ->
+                        when (entity) {
 
-                            q.upsertTask(
-                                id = o.getString("id"),
-                                title = o.getString("title"),
-                                description = o.getString("description"),
-                                status = o.getString("status"),
-                                dueAt = if (o.isNull("dueAt")) null else o.getLong("dueAt"),
-                                projectId = if (o.isNull("projectId")) null else o.getString("projectId"),
-                                priority = o.getLong("priority"),
-                                updatedAt = o.getLong("updatedAt"),
-                                deletedAt = if (o.isNull("deletedAt")) null else o.getLong("deletedAt")
-                            )
-                        }
+                            "project" -> when (ch.op) {
+                                "UPSERT" -> {
+                                    val payload = ch.payload ?: return@forEach
+                                    val o = JSONObject(payload)
+                                    q.upsertProject(
+                                        id = o.getString("id"),
+                                        name = o.getString("name"),
+                                        color = if (o.isNull("color")) null else o.getLong("color"),
+                                        updatedAt = o.getLong("updatedAt"),
+                                        deletedAt = if (o.isNull("deletedAt")) null else o.getLong("deletedAt")
+                                    )
+                                }
 
-                        "DELETE" -> {
-                            q.softDeleteTask(
-                                id = ch.entityId,
-                                deletedAt = ch.updatedAt,
-                                updatedAt = ch.updatedAt
-                            )
+                                "DELETE" -> {
+                                    q.softDeleteProject(
+                                        id = ch.entityId,
+                                        deletedAt = ch.updatedAt,
+                                        updatedAt = ch.updatedAt
+                                    )
+                                }
+                            }
+
+                            "task" -> when (ch.op) {
+                                "UPSERT" -> {
+                                    val payload = ch.payload ?: return@forEach
+                                    val o = JSONObject(payload)
+
+                                    q.upsertTask(
+                                        id = o.getString("id"),
+                                        title = o.getString("title"),
+                                        description = o.getString("description"),
+                                        status = o.getString("status"),
+                                        dueAt = if (o.isNull("dueAt")) null else o.getLong("dueAt"),
+                                        projectId = if (o.isNull("projectId")) null else o.getString("projectId"),
+                                        priority = o.getLong("priority"),
+                                        updatedAt = o.getLong("updatedAt"),
+                                        deletedAt = if (o.isNull("deletedAt")) null else o.getLong("deletedAt")
+                                    )
+                                }
+
+                                "DELETE" -> {
+                                    q.softDeleteTask(
+                                        id = ch.entityId,
+                                        deletedAt = ch.updatedAt,
+                                        updatedAt = ch.updatedAt
+                                    )
+                                }
+                            }
                         }
                     }
-                }
 
-                // Cursor fortschreiben
-                q.setCursor("task", pull.nextCursor)
+                    q.setCursor(entity, pull.nextCursor)
+                }
             }
         }
 
