@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     kotlin("android")
@@ -14,9 +16,20 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        val props = Properties().apply {
+            val f = rootProject.file("local.properties")
+            if (f.exists()) load(f.inputStream())
+        }
+
+        val devBaseUrl = props.getProperty("DEV_BASE_URL") ?: "http://10.0.2.2:8080"
+
+        buildConfigField("String", "DEV_BASE_URL", "\"$devBaseUrl\"")
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

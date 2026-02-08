@@ -40,7 +40,8 @@ data class ProjectMeta(val name: String, val color: Long?)
 @Composable
 fun TaskListScreen(
     vm: TaskListViewModel,
-    onOpenProjects: () -> Unit
+    onOpenProjects: () -> Unit,
+    onOpenSyncDebug: () -> Unit
 ) {
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
@@ -88,6 +89,7 @@ fun TaskListScreen(
             title = { Text("Tasks") },
             actions = {
                 TextButton(onClick = onOpenProjects) { Text("Projekte") }
+                TextButton(onClick = onOpenSyncDebug) { Text("SyncDebug") }
                 TextButton(onClick = { vm.toggleBaseUrl() }) {
                     Text(vm.baseUrlLabel)
                 }
@@ -505,8 +507,5 @@ private fun mixColors(
         alpha = 1f
     )
 }
-
-fun argbLongToColor(argb: Long?): Color? =
-    argb?.toInt()?.let { Color(it or 0xFF000000.toInt()) }
 
 

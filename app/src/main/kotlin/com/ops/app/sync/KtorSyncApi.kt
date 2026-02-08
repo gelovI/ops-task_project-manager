@@ -1,3 +1,4 @@
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 package com.ops.app.sync
 
 import com.ops.core.sync.SyncApi

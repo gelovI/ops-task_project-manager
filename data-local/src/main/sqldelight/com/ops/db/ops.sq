@@ -128,4 +128,17 @@ UPDATE project
 SET deletedAt = ?, updatedAt = ?
 WHERE id = ?;
 
+-- ===== DEBUG =====
+
+countOutbox:
+SELECT count(*) FROM outbox;
+
+countOutboxByEntity:
+SELECT entity, count(*) AS cnt
+FROM outbox
+GROUP BY entity
+ORDER BY entity;
+
+getAllCursors:
+SELECT entity, cursor FROM sync_state ORDER BY entity;
 

@@ -5,7 +5,7 @@ import android.content.Context
 class SyncConfig(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("sync", Context.MODE_PRIVATE)
 
-    fun getBaseUrl(): String = prefs.getString("baseUrl", DevBaseUrl.EMULATOR) ?: DevBaseUrl.EMULATOR
+    fun getBaseUrl(): String = prefs.getString("baseUrl", DevBaseUrl.CURRENT) ?: DevBaseUrl.CURRENT
     fun setBaseUrl(url: String) { prefs.edit().putString("baseUrl", url).apply() }
 
     fun getLastSyncAt(): Long? =

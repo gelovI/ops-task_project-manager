@@ -50,7 +50,7 @@ class TaskListViewModel(
     private val minSyncIntervalMs = 30_000L
     fun toggleBaseUrl() {
         val current = syncConfig.getBaseUrl()
-        val next = if (current == DevBaseUrl.EMULATOR) DevBaseUrl.PHONE else DevBaseUrl.EMULATOR
+        val next = if (current == DevBaseUrl.CURRENT) DevBaseUrl.CURRENT else DevBaseUrl.CURRENT
         syncConfig.setBaseUrl(next)
     }
     fun syncNow() {
