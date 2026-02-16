@@ -33,7 +33,6 @@ import com.ops.core.model.ProjectId
 import com.ops.core.model.TaskId
 import com.ops.core.model.TaskModel
 import kotlinx.coroutines.launch
-import java.util.Date
 
 data class ProjectMeta(val name: String, val color: Long?)
 
@@ -121,7 +120,8 @@ fun TaskListScreen(
             // Sync-Status – IMMER sichtbar
             SyncStatusBar(
                 state = state.syncing,
-                onSync = vm::syncNow
+                onSync = vm::syncNow,
+                onOpenDebug = onOpenSyncDebug
             )
 
             Spacer(Modifier.height(8.dp))
@@ -208,44 +208,40 @@ fun TaskListScreen(
 @Composable
 fun SyncStatusBar(
     state: SyncUiState,
-    onSync: () -> Unit
+    onSync: () -> Unit,
+    onOpenDebug: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text(
-                text = when {
-                    state.syncing -> "🔄 Sync läuft…"
-                    state.error != null -> "❌ Sync-Fehler: ${state.error}"
-                    state.lastSyncAt != null ->
-                        "Zuletzt: ${Date(state.lastSyncAt)}"
-                    else -> "⏸️ Noch kein Sync"
-                },
-                style = MaterialTheme.typography.bodyMedium
-            )
+        Text(
+            text = when {
+                state.syncing -> "🔄 Synchronisiere…"
+                state.error != null -> "⚠️ Sync fehlgeschlagen"
+                state.lastSyncAt != null -> "✔️ Sync aktuell"
+                else -> "⏸️ Offline"
+            },
+            style = MaterialTheme.typography.bodyMedium
+        )
 
-            if (!state.syncing && state.lastSyncAt != null) {
-                Text(
-                    text = "⬆ ${state.pushed}  ⬇ ${state.pulled}",
-                    style = MaterialTheme.typography.bodySmall
-                )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = onOpenDebug) {
+                Text("Details")
             }
-        }
 
-        Button(
-            onClick = onSync,
-            enabled = !state.syncing
-        ) {
-            Text("Sync")
+            Button(
+                onClick = onSync,
+                enabled = !state.syncing
+            ) {
+                Text("Sync")
+            }
         }
     }
 }
-
 
 @Composable
 private fun TaskList(

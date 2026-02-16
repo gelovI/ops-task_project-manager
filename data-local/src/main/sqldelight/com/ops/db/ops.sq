@@ -142,3 +142,36 @@ ORDER BY entity;
 getAllCursors:
 SELECT entity, cursor FROM sync_state ORDER BY entity;
 
+getOutboxLatest:
+SELECT
+  outboxId,
+  entity,
+  entityId,
+  op,
+  updatedAt,
+  enqueuedAt,
+  payload
+FROM outbox
+ORDER BY outboxId DESC
+LIMIT :limit;
+
+clearOutboxDebug:
+DELETE FROM outbox;
+
+-- --------------------------
+-- Meta
+-- --------------------------
+
+CREATE TABLE IF NOT EXISTS meta (
+  key TEXT NOT NULL PRIMARY KEY,
+  value TEXT
+);
+
+getMeta:
+SELECT value FROM meta WHERE key = ?;
+
+setMeta:
+INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?);
+
+deleteMeta:
+DELETE FROM meta WHERE key = ?;

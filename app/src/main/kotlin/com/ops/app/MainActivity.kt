@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
                     TaskListScreen(
                         vm = taskVm,
                         onOpenProjects = { nav.navigate(Routes.PROJECTS) },
-                        onOpenSyncDebug = { nav.navigate(Routes.ROUTE_SYNC_DEBUG) }
+                        onOpenSyncDebug = { nav.navigate(Routes.ROUTE_SYNC_DEBUG) },
                     )
                 }
 
@@ -67,7 +67,12 @@ class MainActivity : ComponentActivity() {
                 }
 
                 composable(Routes.ROUTE_SYNC_DEBUG) {
-                    val vm = remember { c.syncDebugViewModel() }
+                    val vm: com.ops.app.sync.SyncDebugViewModel = viewModel(
+                        factory = SimpleVmFactory {
+                            c.syncDebugViewModel()
+                        }
+                    )
+
                     SyncDebugScreen(
                         vm = vm,
                         onBack = { nav.popBackStack() }

@@ -1,10 +1,13 @@
 package com.ops.app
 
 import android.content.Context
+import com.ops.app.sync.DevBaseUrl
 import com.ops.app.sync.KtorSyncApi
 import com.ops.app.sync.SyncConfig
 import com.ops.app.sync.SyncDebugViewModel
+import com.ops.app.util.AndroidLogger
 import com.ops.core.usecase.ProjectRepository
+import com.ops.core.usecase.SyncDebugRepository
 import com.ops.core.usecase.TaskRepository
 import com.ops.data.local.OpsDatabaseFactory
 import com.ops.data.local.SqlDelightOutboxWriter
@@ -19,12 +22,20 @@ class AppContainer(context: Context) {
 
     val taskRepository: TaskRepository = SqlDelightTaskRepository(db)
     val projectRepository: ProjectRepository = SqlDelightProjectRepository(db = db, outbox = outboxWriter)
-    val syncConfig = SyncConfig(context)
-    val syncOnce = SyncOnce(db) { KtorSyncApi(syncConfig.getBaseUrl()) }
-    private val syncDebugRepo = SqlDelightSyncDebugRepository(db)
 
+    private val syncDebugRepo: SyncDebugRepository = SqlDelightSyncDebugRepository(db)
+    val syncConfig = SyncConfig(context)
+    val syncOnce = SyncOnce(
+        db = db,
+        apiProvider = { KtorSyncApi(DevBaseUrl.CURRENT) },
+        logger = AndroidLogger(),
+        debugRepo = syncDebugRepo
+    )
     fun syncDebugViewModel(): SyncDebugViewModel =
-        SyncDebugViewModel(syncDebugRepo)
+        SyncDebugViewModel(
+            debugRepo = syncDebugRepo,
+            syncOnce = { syncOnce.run() }
+        )
 }
 
 

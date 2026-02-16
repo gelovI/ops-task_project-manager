@@ -23,4 +23,5 @@ kotlin {
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 }

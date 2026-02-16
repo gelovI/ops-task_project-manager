@@ -61,6 +61,8 @@ class SqlDelightTaskRepository(
                     deletedAt = task.deletedAt
                 )
 
+                android.util.Log.d("DB", "TaskRepo db=${db.hashCode()} q=${q.hashCode()}")
+
                 q.enqueueOutbox(
                     entity = "task",
                     entityId = task.id.value,
@@ -69,10 +71,12 @@ class SqlDelightTaskRepository(
                     payload = payload,
                     enqueuedAt = now
                 )
+                android.util.Log.d("OUTBOX", "enqueue UPSERT task=${task.id.value} updatedAt=$effectiveUpdatedAt")
             }
         }
 
     override suspend fun softDelete(id: TaskId, deletedAt: Long, updatedAt: Long) =
+
         withContext(Dispatchers.IO) {
             val now = System.currentTimeMillis()
 
@@ -91,6 +95,7 @@ class SqlDelightTaskRepository(
                     payload = null,
                     enqueuedAt = now
                 )
+                android.util.Log.d("OUTBOX", "enqueue DELETE task=${id.value} updatedAt=$updatedAt")
             }
         }
 }

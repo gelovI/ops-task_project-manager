@@ -4,11 +4,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class SyncChange(
+    val outboxId: Long? = null,
     val entity: String,
     val entityId: String,
     val op: String,
     val updatedAt: Long,
-    val payload: String?
+    val payload: String? = null
 )
 @Serializable
 data class SyncPushRequest(val changes: List<SyncChange>)

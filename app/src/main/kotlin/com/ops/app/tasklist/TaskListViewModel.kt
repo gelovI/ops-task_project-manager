@@ -2,7 +2,6 @@ package com.ops.app.tasklist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ops.app.projects.ProjectEditorState
 import com.ops.app.sync.DevBaseUrl
 import com.ops.app.sync.SyncConfig
 import com.ops.app.taskeditor.TaskEditorState
@@ -20,9 +19,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
-import com.ops.core.usecase.CreateProject
-import com.ops.core.util.IdGenerator
-import com.ops.core.util.TimeProvider
 
 
 class TaskListViewModel(
